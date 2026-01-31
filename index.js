@@ -6,7 +6,22 @@ const {
   AudioPlayerStatus,
 } = require("@discordjs/voice");
 const fs = require("fs");
+require("dotenv").config();
 const userSounds = JSON.parse(fs.readFileSync("./sound.json", "utf8"));
+const defaultSound = "./verstappen.ogg";
+
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Basit bir health check endpoint
+app.get('/', (req, res) => {
+    res.send('Bot çalışıyor! 🤖');
+});
+
+app.listen(PORT, () => {
+    console.log(`Web server ${PORT} portunda çalışıyor`);
+});
 
 const client = new Client({
   intents: [
@@ -50,6 +65,11 @@ client.on("voiceStateUpdate", (oldState, newState) => {
   }
 });
 
-client.login(
-  "MTQ2NzE0Mjc1MTcyNzY1MzA3NA.GgZ7Tx.Qbg81eTSPorKa3tn7lZaTsJEdJrQQinllnR1n4"
-);
+const token = process.env.DISCORD_TOKEN;
+if (!token) {
+  console.error("HATA: DISCORD_TOKEN .env dosyasında bulunamadı!");
+  console.error("Lütfen .env dosyası oluşturun ve DISCORD_TOKEN değişkenini ekleyin.");
+  process.exit(1);
+}
+
+client.login(token);
