@@ -31,7 +31,6 @@ const client = new Client({
 });
 console.log("✅ Client oluşturuldu");
 
-// Ses dosyalarını yükle
 let userSounds = {};
 let defaultSound = "./verstappen.ogg";
 
