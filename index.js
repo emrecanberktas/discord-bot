@@ -20,7 +20,6 @@ app.listen(PORT, () => {
     console.log(`✅ Web server ${PORT} portunda çalışıyor`);
 });
 
-console.log("📦 Discord.js yükleniyor...");
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -29,10 +28,33 @@ const client = new Client({
     GatewayIntentBits.GuildVoiceStates,
   ],
 });
-console.log("✅ Client oluşturuldu");
 
 let userSounds = {};
 let defaultSound = "./verstappen.ogg";
+
+const groups = {
+  "tam-kadro": {
+    members: [
+      "253959974076678146", 
+      "235819452397125633", 
+      "247063627310301184", 
+      "236191122848743427", 
+      "237286349252591617"  
+    ],
+    sound: "./tam-kadro.mp3",
+    priority: 1 
+  },
+  "borasız-kadro": {
+    members: [
+      "253959974076678146", 
+      "235819452397125633", 
+      "247063627310301184",  
+      "236191122848743427", 
+    ],
+    sound: "./trio.mp3",
+    priority: 2
+  }
+};
 
 try {
   if (fs.existsSync("./sound.json")) {
@@ -43,12 +65,32 @@ try {
   console.error("❌ sound.json hatası:", error);
 }
 
-client.on("clientReady", () => {
-  console.log("🎉🎉🎉 BOT HAZIR 🎉🎉🎉");
-  console.log(`✅ Bot kullanıcı adı: ${client.user.tag}`);
-  console.log(`📊 Sunucu sayısı: ${client.guilds.cache.size}`);
-  console.log(`👥 Toplam kullanıcı: ${client.users.cache.size}`);
-});
+
+
+function checkGroups(channel) {
+  const membersInChannel = channel.members.map(member => member.user.id);
+  const matchedGroups = [];
+  
+  for (const [groupName, groupData] of Object.entries(groups)) {
+    const allPresent = groupData.members.every(id => membersInChannel.includes(id));
+    if (allPresent) {
+      console.log(`🎊 "${groupName}" grubu tam kadro!`);
+      matchedGroups.push({
+        name: groupName,
+        sound: groupData.sound,
+        priority: groupData.priority
+      });
+    }
+  }
+  
+  if (matchedGroups.length > 0) {
+    matchedGroups.sort((a, b) => a.priority - b.priority);
+    console.log(`✅ En yüksek öncelikli grup: "${matchedGroups[0].name}"`);
+    return matchedGroups[0];
+  }
+  
+  return null;
+}
 
 client.on("voiceStateUpdate", (oldState, newState) => {
   console.log("🔔 voiceStateUpdate eventi tetiklendi");
@@ -62,14 +104,36 @@ client.on("voiceStateUpdate", (oldState, newState) => {
     const userId = newState.member.user.id;
     console.log(`🎤 ${newState.member.user.tag} (${userId}) kanala katıldı!`);
 
-    const userData = userSounds[userId];
-    const soundFile = userData ? userData.sound : defaultSound;
+    let soundFile;
+    let isGroupSound = false;
+    
+    const matchedGroup = checkGroups(newState.channel);
+    
+    if (matchedGroup) {
+      soundFile = matchedGroup.sound;
+      isGroupSound = true;
+      console.log(`🎊 GRUP SESİ ÇALINIYOR: ${matchedGroup.name}`);
+    } else {
+      const userData = userSounds[userId];
+      soundFile = userData ? userData.sound : defaultSound;
+      console.log(`👤 Bireysel ses çalınıyor`);
+    }
 
     console.log(`🔊 Çalınacak ses: ${soundFile}`);
 
     if (!fs.existsSync(soundFile)) {
       console.error(`❌ Ses dosyası bulunamadı: ${soundFile}`);
-      return;
+      if (isGroupSound) {
+        const userData = userSounds[userId];
+        soundFile = userData ? userData.sound : defaultSound;
+        if (fs.existsSync(soundFile)) {
+          console.log(`⚠️ Grup sesi bulunamadı, bireysel ses çalınıyor: ${soundFile}`);
+        } else {
+          return;
+        }
+      } else {
+        return;
+      }
     }
 
     try {
