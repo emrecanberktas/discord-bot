@@ -41,7 +41,7 @@ const groups = {
       "236191122848743427", 
       "237286349252591617"  
     ],
-    sound: "./tam-kadro.mp3",
+    sound: "./Fantastik.mp3",
     priority: 1 
   },
   "borasız-kadro": {
